@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>血糖記錄</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css')}}">
+    
+</head>
+<body>
+    <div id="cal" style="border: 2px solid #000; border-radius: 10px; padding: 10px; width:400px">
+        <input type="number" id="carb_impact" placeholder="本餐碳水" /><p></p>
+        <input type="number" id="insulin_sensitivity" placeholder="一分碳水所對應的胰島素劑量" /><p></p>
+        <input type="number" id="target_glucose_low" placeholder="理想血糖最低值" /><p></p>
+        <input type="number" id="target_glucose_high" placeholder="理想血糖最高值" /><p></p>
+        <input type="number" id="current_glucose" placeholder="目前血糖" /><p></p>
+        <button id="calculate-button">計算</button>
+    </div>
+
+
+    <script>
+        document.getElementById("calculate-button").onclick = function() {
+            const carb_impact = parseFloat(document.getElementById('carb_impact').value);
+            const insulin_sensitivity = parseFloat(document.getElementById('insulin_sensitivity').value);
+            const target_glucose_low = parseFloat(document.getElementById('target_glucose_low').value);
+            const target_glucose_high = parseFloat(document.getElementById('target_glucose_high').value);
+            const current_glucose = parseFloat(document.getElementById('current_glucose').value);
+
+            calculateInsulinDose(carb_impact, insulin_sensitivity, [target_glucose_low, target_glucose_high], current_glucose);
+        };
+
+        function calculateInsulinDose(carb_impact, insulin_sensitivity, target_glucose, current_glucose) {
+            const basic_dose = carb_impact / 15 * insulin_sensitivity;
+            let additional_dose = 0;
+            if (current_glucose > target_glucose[1]) {
+                additional_dose = (current_glucose - target_glucose[1]) / 45;
+            }
+            const total_dose = basic_dose + additional_dose;
+            alert(`本餐因施打總共 ${total_dose.toFixed(2)} 單位的劑量`);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+body{
+    display:block;
+}
+input{
+    position: relative;
+}
+button{
+    background-color: bisque;
+    border-radius: 10px;
+}

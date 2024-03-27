@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Glucose Levels Chart</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+<div id="chart"></div>
+<h1 style="text-align: center;">不知道怎摩解讀數據嗎，AI來幫你</h1>
+<button id="json-read" style="display: block; margin: 0 auto;">點擊按鈕獲得AI報告</button>
+<div id="response_box" style="margin: 20px;padding: 10px;border: 1px solid #000;min-height: 50px;width: 300px;height: auto;position: absolute;top: 574px;
+left: 551px;">ChatGPT的回答將顯示在這裡</div>
+<script>
+    const analyze_button = document.getElementById('json-read')
+    const responseBox = document.getElementById('response_box')
+    // 從後端獲取數據
+    fetch('/get-data')
+    .then(response => response.json())
+    .then(data => {
+        const glucoseLevels = data.map(item => item.g);
+        const timestamps = data.map(item => item.t);
+        const hoverTexts = data.map(item => {
+        const glucoseLevels_chart = item.g;
+        const injectinsulin = item.i;
+        const carbs = item.c || '0'; // 如果carbs有值則使用，無值則顯示0
+        const exercise = item.e || '0'; // 如果exercise有值則使用，無值則顯示0
+        return `血糖:${glucoseLevels_chart}<br>碳水: ${carbs}g<br>運動: ${exercise}mins<br>注射量 ${injectinsulin}`; // 定義hover時顯示的文本
+    });
+        const trace = {
+            x: timestamps,
+            y: glucoseLevels,
+            type: 'scatter', // 使用折線圖
+            hoverinfo: 'text',
+            text: hoverTexts // 添加hover文本
+        };
+
+        const layout = {
+            title: '血糖數據',
+            xaxis: {
+                title: '時間',
+                autorange: true, // 允許x軸自動縮放
+                type: 'date' // 設置x軸類型為日期
+            },
+            yaxis: {
+                title: '血糖'
+            }
+        };
+
+        Plotly.newPlot('chart', [trace], layout);
+    });
+    analyze_button.addEventListener('click', () => {
+
+
+                // 在發送請求前，顯示處理中的訊息
+                responseBox.textContent = "處理中，請等待(有時會有點久)";
+
+                fetch('/analyzejson', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    responseBox.textContent = `回答: ${data.response}`;
+                })
+                .catch(error => {
+                    console.error('錯誤:', error);
+                    // 若有錯誤，更新 responseBox 以顯示錯誤訊息
+                    responseBox.textContent = '處理過程中發生錯誤。';
+                });
+            } 
+            
+        );
+</script>
+
+</body>
+</html>

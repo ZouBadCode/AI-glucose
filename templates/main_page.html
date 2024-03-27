@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>血糖記錄</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css')}}">
+</head>
+<body>
+    <h1>輸入血糖值</h1>
+    <input type="number" id="glucose" placeholder="血糖值" />
+    <!-- 新增輸入碳水化合物攝取量的輸入框 -->
+    <input type="number" id="carbs" placeholder="碳水化合物攝取量(克)" />
+    <!-- 新增輸入當日運動時長的輸入框 -->
+    <input type="number" id="exercise" placeholder="運動時長(分鐘)" />
+    <input type="number" id="insulin" placeholder="胰島素注射量" />
+    <button onclick="submitGlucose()">提交</button>
+    <button id="jump-button">跳轉至數據頁面</button>
+    <button id="jump-button-cal">跳轉至胰島素計算機</button>
+    <h2>不知道營養標示嗎，讓AI來幫幫你(此數據不一定精準，請謹慎參考)</h2>
+    <div id="drop_zone" style="width: 300px;height: auto; border: 2px dashed #0087F7; margin: 20px; padding: 10px;">
+        將圖片拖動到這裡或者 <input type="file" id="file_input" multiple>
+    </div>
+    <div id="preview"></div>
+    <button id="upload_button" style="margin: 20px;">發送圖片</button>
+    <div id="response_box" style="margin: 20px;padding: 10px;border: 1px solid #000;min-height: 50px;width: 300px;height: auto;position: absolute;top: 161px;left: 362px;">ChatGPT的回答將顯示在這裡</div>
+    <script>
+        function submitGlucose() {
+            const g = document.getElementById('glucose').value;
+            const c = document.getElementById('carbs').value; // 獲取碳水化合物攝取量
+            const e = document.getElementById('exercise').value; // 獲取運動時長
+            const i = document.getElementById('insulin').value//注射量
+            const t = new Date().toISOString();
+          
+            fetch('/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ g, c, e, i, t }), // 加入 carbs 和 exercise
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('資料已成功發送至後端');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
+    <script>
+    document.getElementById("jump-button").onclick = function() {
+        window.location.href = "http://127.0.0.1:5000/view-plot";
+    };
+    </script>
+    <script>
+        const dropZone = document.getElementById('drop_zone');
+        const fileInput = document.getElementById('file_input');
+        const uploadButton = document.getElementById('upload_button');
+        const responseBox = document.getElementById('response_box');
+        let filesToUpload = [];
+
+        dropZone.addEventListener('dragover', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            const files = event.dataTransfer.files;
+            previewFiles(files);
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+            previewFiles(files);
+        });
+
+        uploadButton.addEventListener('click', () => {
+            if (filesToUpload.length > 0) {
+                const formData = new FormData();
+                formData.append('file', filesToUpload[0]); // 假設只處理一個檔案
+
+                // 在發送請求前，顯示處理中的訊息
+                responseBox.textContent = "處理中，請等待(有時會有點久)";
+
+                fetch('/guess_food', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    responseBox.textContent = `回答: ${data.response}`;
+                    document.getElementById('preview').innerHTML = '';
+                    filesToUpload = [];
+                })
+                .catch(error => {
+                    console.error('錯誤:', error);
+                    // 若有錯誤，更新 responseBox 以顯示錯誤訊息
+                    responseBox.textContent = '處理過程中發生錯誤。';
+                });
+            } else {
+                alert('請選擇一個圖片檔案。');
+            }
+        });
+        function previewFiles(files) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            filesToUpload = [];
+
+            for (const file of files) {
+                if (!file.type.startsWith('image/')){ continue }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    img.style.width = '100px';
+                    img.style.height = '100px';
+                    img.style.margin = '10px';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+
+                filesToUpload.push(file);
+            }
+        }
+
+
+    document.getElementById("jump-button-cal").onclick = function() {
+        window.location.href = "http://127.0.0.1:5000/cal-glu";
+    };
+    </script>
+</body>
+</html>
